@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pylibevp"
+version = "0.1.0"
+description = "Python wrapper and CLI for Talisman EVP archives"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+  { name = "Eudivan" }
+]
+keywords = ["talisman", "evp", "archive", "ctypes", "pylibevp"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Operating System :: POSIX :: Linux"
+]
+
+[project.scripts]
+pylibevp = "pylibevp.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+include-package-data = true
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+pylibevp = ["bin/*"]

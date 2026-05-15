@@ -1,0 +1,51 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++
+
+      - name: Build native library
+        working-directory: dvsku_libevp/libevp
+        run: |
+          cmake -S . -B build -DEVP_TEST=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target libevp -j
+          mkdir -p ../../src/pylibevp/bin
+          c++ -std=c++20 -fPIC -shared libevp_wrapper.cpp build/source/libevp.a \
+            -Iinclude -Ilibraries -I./source \
+            -o ../../src/pylibevp/bin/libevp_wrapper.so
+
+      - name: Build wheel and sdist
+        working-directory: .
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+            src/pylibevp/bin/libevp_wrapper.so

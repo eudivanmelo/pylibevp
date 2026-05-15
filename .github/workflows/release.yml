@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  build-release:
+  build-linux-wrapper:
     runs-on: ubuntu-latest
 
     steps:
@@ -26,15 +26,84 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y cmake g++
 
-      - name: Build native library
+      - name: Build native wrapper
         working-directory: dvsku_libevp/libevp
         run: |
           cmake -S . -B build -DEVP_TEST=OFF -DCMAKE_BUILD_TYPE=Release
           cmake --build build --target libevp -j
           mkdir -p ../../src/pylibevp/bin
-          c++ -std=c++20 -fPIC -shared libevp_wrapper.cpp build/source/libevp.a \
+          LIBEVP_A=$(find build -name libevp.a -print -quit)
+          c++ -std=c++20 -fPIC -shared libevp_wrapper.cpp "$LIBEVP_A" \
             -Iinclude -Ilibraries -I./source \
             -o ../../src/pylibevp/bin/libevp_wrapper.so
+
+      - name: Upload Linux wrapper
+        uses: actions/upload-artifact@v4
+        with:
+          name: libevp-wrapper-linux
+          path: src/pylibevp/bin/libevp_wrapper.so
+
+  build-windows-wrapper:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up MSVC toolchain
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build native wrapper
+        working-directory: dvsku_libevp/libevp
+        shell: pwsh
+        run: |
+          cmake -S . -B build -DEVP_TEST=OFF -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --target libevp --config Release
+          New-Item -ItemType Directory -Force -Path ../../src/pylibevp/bin | Out-Null
+          $libevpLib = Get-ChildItem -Path build -Recurse -Filter libevp.lib | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $libevpLib) {
+            throw "libevp.lib not found"
+          }
+          cl /nologo /std:c++20 /EHsc /LD libevp_wrapper.cpp /I include /I libraries /I .\source $libevpLib /Fe:../../src/pylibevp/bin/libevp_wrapper.dll
+
+      - name: Upload Windows wrapper
+        uses: actions/upload-artifact@v4
+        with:
+          name: libevp-wrapper-windows
+          path: src/pylibevp/bin/libevp_wrapper.dll
+
+  build-release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-linux-wrapper
+      - build-windows-wrapper
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Download native wrappers
+        uses: actions/download-artifact@v4
+        with:
+          path: native-wrappers
+
+      - name: Stage native wrappers
+        run: |
+          mkdir -p src/pylibevp/bin
+          cp native-wrappers/libevp-wrapper-linux/libevp_wrapper.so src/pylibevp/bin/
+          cp native-wrappers/libevp-wrapper-windows/libevp_wrapper.dll src/pylibevp/bin/
 
       - name: Build wheel and sdist
         working-directory: .
@@ -49,3 +118,4 @@ jobs:
             dist/*.whl
             dist/*.tar.gz
             src/pylibevp/bin/libevp_wrapper.so
+            src/pylibevp/bin/libevp_wrapper.dll

@@ -15,7 +15,12 @@ class LibraryNotFoundError(FileNotFoundError):
 def _candidate_library_names() -> list[str]:
     system = platform.system().lower()
     if "windows" in system:
-        return ["libevp_wrapper.dll", "evp_wrapper.dll"]
+        return [
+            "libevp_wrapper.dll",
+            "evp_wrapper.dll",
+            "libevp_wrapper.pyd",
+            "evp_wrapper.pyd",
+        ]
     if "darwin" in system:
         return ["libevp_wrapper.dylib", "libevp_wrapper.so"]
     return ["libevp_wrapper.so"]
@@ -56,7 +61,7 @@ def resolve_library_path(explicit_path: Optional[str] = None) -> Path:
 
     hints = [
         "Native wrapper not found.",
-        "Build libevp_wrapper using CMake in dvsku_libevp/libevp and set PYLIBEVP_LIB_PATH.",
+        "Build libevp_wrapper for your platform in dvsku_libevp/libevp and set PYLIBEVP_LIB_PATH.",
         "Checked paths:",
     ]
     hints.extend(f"- {path}" for path in checked_paths)

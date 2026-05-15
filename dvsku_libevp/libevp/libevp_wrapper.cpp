@@ -55,16 +55,22 @@ namespace {
     }
 }
 
+#if defined(_WIN32)
+    #define LIBEVP_WRAPPER_API __declspec(dllexport)
+#else
+    #define LIBEVP_WRAPPER_API
+#endif
+
 extern "C" {
-    void evp_init() {
+    LIBEVP_WRAPPER_API void evp_init() {
         g_last_archive_files.clear();
     }
 
-    void evp_cleanup() {
+    LIBEVP_WRAPPER_API void evp_cleanup() {
         g_last_archive_files.clear();
     }
 
-    c_evp_result evp_get_archive_fds(const char* archive_path, c_evp_fd** out_files, int* out_count) {
+    LIBEVP_WRAPPER_API c_evp_result evp_get_archive_fds(const char* archive_path, c_evp_fd** out_files, int* out_count) {
         if (!archive_path || !out_files || !out_count) {
             c_evp_result result{};
             result.status = static_cast<int>(libevp::evp_result::status::failure);
@@ -101,7 +107,7 @@ extern "C" {
         return make_result(result);
     }
 
-    void evp_free_fds(c_evp_fd* files, int count) {
+    LIBEVP_WRAPPER_API void evp_free_fds(c_evp_fd* files, int count) {
         if (!files) {
             return;
         }
@@ -113,7 +119,7 @@ extern "C" {
         delete[] files;
     }
 
-    c_evp_result evp_unpack(const char* archive_path, const char* output_dir) {
+    LIBEVP_WRAPPER_API c_evp_result evp_unpack(const char* archive_path, const char* output_dir) {
         if (!archive_path || !output_dir) {
             c_evp_result result{};
             result.status = static_cast<int>(libevp::evp_result::status::failure);
@@ -128,7 +134,7 @@ extern "C" {
         return make_result(result);
     }
 
-    c_evp_result evp_pack(const char* base_path, const char** files, int count, const char* output_archive) {
+    LIBEVP_WRAPPER_API c_evp_result evp_pack(const char* base_path, const char** files, int count, const char* output_archive) {
         if (!base_path || !output_archive) {
             c_evp_result result{};
             result.status = static_cast<int>(libevp::evp_result::status::failure);
@@ -144,11 +150,11 @@ extern "C" {
         return make_result(result);
     }
 
-    int evp_get_file_count() {
+    LIBEVP_WRAPPER_API int evp_get_file_count() {
         return static_cast<int>(g_last_archive_files.size());
     }
 
-    int evp_get_file_info(int index, char* filename_buffer, int buffer_size, std::uint32_t* data_size, std::uint32_t* compressed_size) {
+    LIBEVP_WRAPPER_API int evp_get_file_info(int index, char* filename_buffer, int buffer_size, std::uint32_t* data_size, std::uint32_t* compressed_size) {
         if (index < 0 || !filename_buffer || buffer_size <= 0 || !data_size || !compressed_size) {
             return -1;
         }

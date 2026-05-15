@@ -15,7 +15,8 @@ keywords = ["talisman", "evp", "archive", "ctypes", "pylibevp"]
 classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
-  "Operating System :: POSIX :: Linux"
+  "Operating System :: POSIX :: Linux",
+  "Operating System :: Microsoft :: Windows",
 ]
 
 [project.scripts]

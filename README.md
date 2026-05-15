@@ -1,116 +1,30 @@
 # pylibevp
 
-Standalone repository for the Python package and native wrapper used to pack and unpack Talisman `.evp` archives.
+`pylibevp` é um pequeno wrapper Python para a biblioteca C++ [dvsku/libevp](https://github.com/dvsku/libevp), usada para compactar e descompactar arquivos `.evp` do Talisman Online.
 
-## Features
+## O que faz
 
-- Python API for list, extract, and pack operations
-- Installable CLI command: `pylibevp`
-- Django-friendly integration
-- Native library path auto-discovery with environment override
-- Prebuilt release wheels with the native `.so` bundled
-- C++ source backup in `dvsku_libevp/libevp` (origin: https://github.com/dvsku/libevp/)
+- compacta arquivos `.evp`
+- descompacta arquivos `.evp`
+- expõe a biblioteca nativa para Python através de uma API simples com `ctypes`
 
-## Project layout
+## Instalação
 
-- `src/pylibevp/api.py`: Python ctypes wrapper
-- `src/pylibevp/cli.py`: command line interface
-- `src/pylibevp/_loader.py`: native library path resolver
-- `dvsku_libevp/libevp`: backup copy of upstream C++ project
-- `pyproject.toml`: package metadata and build config
-
-## Build native library
-
-For releases, the wheel already ships with `libevp_wrapper.so` bundled inside the package.
-
-If you are building locally, the package depends on `libevp_wrapper.so` generated from the C++ backup in `dvsku_libevp/libevp`.
+Instale a partir da wheel publicada:
 
 ```bash
-cd dvsku_libevp/libevp
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-
-c++ -std=c++20 -fPIC -shared libevp_wrapper.cpp build/source/libevp.a \
-    -Iinclude -Ilibraries -I./source \
-    -o ../../src/pylibevp/bin/libevp_wrapper.so
+python -m pip install --upgrade "https://github.com/eudivanmelo/pylibevp/releases/download/v0.1.0/pylibevp-0.1.0-py3-none-any.whl"
 ```
 
-Expected output on Linux:
+## Biblioteca nativa
 
-- static core library: `dvsku_libevp/libevp/build/source/libevp.a`
-- Python wrapper: `src/pylibevp/bin/libevp_wrapper.so`
+O pacote já inclui o wrapper nativo da plataforma alvo. Se você compilar o projeto a partir do código-fonte, a biblioteca nativa requer C++20.
 
-## Install for local development
+## Limitações
 
-From this folder (`pylibevp`):
+- A validação de arquivos no formato v2 é limitada porque alguns arquivos de modelo, textura e cenário são criptografados.
+- Essa criptografia extra fica fora do escopo desta biblioteca.
 
-```bash
-pip install -e .
-```
+## Origem
 
-This works when `src/pylibevp/bin/libevp_wrapper.so` already exists.
-
-## Install from release
-
-After CI publishes a GitHub Release, download the wheel and install it directly:
-
-```bash
-pip install pylibevp-<version>-py3-none-any.whl
-```
-
-Or install from the release asset URL if you prefer a one-liner with `pip`.
-
-```bash
-pip install https://github.com/<owner>/<repo>/releases/download/v<version>/pylibevp-<version>-py3-none-any.whl
-```
-
-## Configure native library path
-
-Option A (recommended): set environment variable
-
-```bash
-export PYLIBEVP_LIB_PATH="/absolute/path/to/libevp_wrapper.so"
-```
-
-Option B: pass explicit path in code
-
-```python
-from pylibevp import LibEVP
-
-ev = LibEVP(lib_path="/absolute/path/to/libevp_wrapper.so")
-```
-
-## CLI examples
-
-```bash
-pylibevp list data.evp
-pylibevp extract data.evp -o output/
-pylibevp pack -b output -f "*" -o repacked.evp
-pylibevp info data.evp
-```
-
-## Django example
-
-```python
-# app/services/evp_service.py
-from pylibevp import LibEVP
-
-
-def extract_archive(archive_path: str, destination: str) -> dict:
-    evp = LibEVP()  # PYLIBEVP_LIB_PATH must be set in environment
-    return evp.unpack(archive_path, destination)
-```
-
-In production, set `PYLIBEVP_LIB_PATH` in your environment or process manager.
-
-## Release flow
-
-- Push a tag like `v0.1.0`
-- GitHub Actions builds `libevp_wrapper.so`
-- GitHub Actions builds the wheel and sdist
-- The release assets include the wheel, source tarball, and the compiled `.so`
-- End users install the wheel with `pip` and do not compile anything manually
-
-## Repository boundary
-
-This repository is only the library side. The GUI lives in a separate repository and depends on the release published here.
+Este projeto é apenas um wrapper Python para o código-base `libevp`. Os detalhes originais do projeto nativo e do suporte aos formatos estão documentados no repositório upstream.
